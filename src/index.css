@@ -1,0 +1,25 @@
+@import url('https://fonts.googleapis.com/css2?family=Gochi+Hand&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;600&display=swap');
+
+:root {
+  --bg: #1f3a2e;
+  --panel: #234536;
+  --line: #4e6e5f;
+  --chalk: #f2efe6;
+  --muted: #c9d3cc;
+  --accent: #f2c14e;
+  --good: #7fb89a;
+  --bad: #f4a28c;
+  --mono: 'IBM Plex Mono', ui-monospace, monospace;
+  --hand: 'Gochi Hand', cursive;
+  font-family: 'IBM Plex Sans', system-ui, sans-serif;
+  color: var(--chalk);
+  background: var(--bg);
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--bg);
+}

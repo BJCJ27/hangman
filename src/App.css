@@ -1,0 +1,183 @@
+.app {
+  max-width: 1160px;
+  margin: 0 auto;
+  padding: 32px 20px 48px;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ---------- Header ---------- */
+.header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+.header__title {
+  margin: 0;
+  font-family: var(--hand);
+  font-weight: 400;
+  font-size: 56px;
+  letter-spacing: 1px;
+}
+.header__stats { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.stat {
+  padding: 10px 14px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 15px;
+}
+.stat strong { color: var(--accent); margin-left: 4px; }
+
+/* ---------- Buttons ---------- */
+.btn {
+  min-height: 44px;
+  padding: 0 20px;
+  border-radius: 10px;
+  font: 600 15px 'IBM Plex Sans', sans-serif;
+  cursor: pointer;
+}
+.btn--primary { border: 0; background: var(--accent); color: var(--bg); }
+.btn--primary:hover { background: #ffd56b; }
+.btn--ghost { border: 1px dashed var(--accent); background: transparent; color: var(--accent); font-weight: 400; }
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:focus-visible, .key:focus-visible, select:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- Layout ---------- */
+.board { display: flex; flex-wrap: wrap; gap: 28px; align-items: stretch; }
+
+.gallows {
+  flex: 1 1 300px;
+  min-width: 0;
+  background: var(--panel);
+  border: 1px solid #3a5c4c;
+  border-radius: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.gallows__img { width: 100%; max-width: 280px; height: auto; }
+.gallows__label { margin: 8px 0 0; font-size: 14px; color: var(--muted); }
+.gallows__count { margin: 0; font: 14px var(--mono); color: var(--muted); }
+.lives { display: flex; gap: 8px; }
+.life { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line); }
+.life--on { background: var(--accent); border-color: var(--accent); }
+
+.play { flex: 999 1 540px; min-width: 0; display: flex; flex-direction: column; gap: 26px; }
+.play__meta { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
+.play__meta .btn--ghost { margin-left: auto; }
+.pill { padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); font-size: 14px; color: var(--muted); }
+.pill--solid { background: var(--chalk); border-color: var(--chalk); color: var(--bg); font-weight: 600; }
+.category-select { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); }
+.category-select select {
+  min-height: 36px;
+  padding: 0 10px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--chalk);
+  font: inherit;
+}
+
+/* ---------- Word ---------- */
+.word { display: flex; flex-wrap: wrap; gap: 12px; padding: 8px 0; }
+.word__slot {
+  width: 48px;
+  height: 60px;
+  border-bottom: 4px solid var(--chalk);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 600 40px var(--mono);
+}
+.word__slot--missed { color: var(--bad); }
+
+/* ---------- Guessed letters ---------- */
+.guessed { display: flex; flex-direction: column; gap: 6px; }
+.guessed p { margin: 0; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+.guessed em { color: var(--muted); font-size: 14px; }
+.guessed__label { color: var(--muted); width: 64px; font-size: 15px; }
+.guessed__hit { font: 600 18px var(--mono); color: var(--good); }
+.guessed__miss { font: 600 18px var(--mono); color: var(--bad); text-decoration: line-through; }
+
+/* ---------- Keyboard ---------- */
+.keyboard { display: grid; grid-template-columns: repeat(9, minmax(0, 1fr)); gap: 8px; }
+.key {
+  min-height: 48px;
+  border-radius: 10px;
+  border: 0;
+  font: 600 18px var(--mono);
+  cursor: pointer;
+  transition: transform 0.08s;
+}
+.key--available { background: var(--chalk); color: var(--bg); }
+.key--available:hover:not(:disabled) { transform: translateY(-2px); background: #fff; }
+/* Used letters are greyed out. Letters NOT in the word also get a red X. */
+.key--correct,
+.key--wrong { position: relative; background: #5b6b63; color: #aeb8b2; }
+.key--wrong::before,
+.key--wrong::after {
+  content: '';
+  position: absolute;
+  left: 18%;
+  right: 18%;
+  top: 50%;
+  height: 3px;
+  margin-top: -1.5px;
+  border-radius: 2px;
+  background: var(--bad);
+}
+.key--wrong::before { transform: rotate(35deg); }
+.key--wrong::after { transform: rotate(-35deg); }
+.key:disabled { cursor: default; }
+.key--available:disabled { opacity: 0.5; }
+
+@media (max-width: 560px) {
+  .keyboard { grid-template-columns: repeat(7, minmax(0, 1fr)); }
+  .word__slot { width: 34px; height: 48px; font-size: 30px; }
+  .header__title { font-size: 44px; }
+  .play__meta .btn--ghost { margin-left: 0; }
+}
+
+/* ---------- Game over pop-up ---------- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 20, 15, 0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  animation: fade 0.2s ease-out;
+}
+.modal {
+  width: 100%;
+  max-width: 460px;
+  background: var(--panel);
+  border: 1px solid #3a5c4c;
+  border-radius: 20px;
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  text-align: center;
+  animation: pop 0.25s ease-out;
+}
+.modal__img { width: 140px; height: auto; }
+.modal__title { margin: 0; font: 400 48px var(--hand); }
+.modal--won .modal__title { color: var(--good); }
+.modal--lost .modal__title { color: var(--bad); }
+.modal__text { margin: 0; color: var(--muted); }
+.modal__word { margin: 0; font: 600 32px var(--mono); letter-spacing: 4px; word-break: break-all; }
+.modal__stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; width: 100%; margin: 6px 0; }
+.modal__stats div { border: 1px solid var(--line); border-radius: 12px; padding: 10px; display: flex; flex-direction: column; }
+.modal__stats strong { font: 600 22px var(--mono); }
+.modal__stats span { font-size: 13px; color: var(--muted); }
+
+@keyframes fade { from { opacity: 0; } }
+@keyframes pop { from { transform: scale(0.9); opacity: 0; } }

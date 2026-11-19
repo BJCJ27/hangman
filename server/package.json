@@ -1,0 +1,33 @@
+{
+  "name": "hangman-api",
+  "version": "1.0.0",
+  "description": "Express + DynamoDB API for Hangman players",
+  "main": "src/server.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon --legacy-watch src/server.js",
+    "create-table": "node src/createTable.js",
+    "test": "vitest run"
+  },
+  "author": "Brock Caston Jr.",
+  "license": "MIT",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.1171.0",
+    "@aws-sdk/lib-dynamodb": "^3.1171.0",
+    "cors": "^2.8.6",
+    "express": "^5.3.0"
+  },
+  "devDependencies": {
+    "aws-sdk-client-mock": "^4.1.0",
+    "nodemon": "^3.1.14",
+    "supertest": "^7.3.2",
+    "vitest": "^5.1.0"
+  },
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  }
+}

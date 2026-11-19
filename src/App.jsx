@@ -5,6 +5,9 @@ import WordDisplay from './components/WordDisplay';
 import Keyboard from './components/Keyboard';
 import GuessedLetters from './components/GuessedLetters';
 import GameOverModal from './components/GameOverModal';
+import LoginForm from './components/LoginForm';
+import PlayerStats from './components/PlayerStats';
+import { getPlayer, createPlayer, updatePlayerStats } from './api/players';
 import { getRandomWord, CATEGORIES } from './data/words';
 import { MAX_LIVES } from './data/stages';
 import './App.css';
@@ -26,6 +29,14 @@ class App extends Component {
       losses: 0,
       streak: 0,
       categoryChoice: 'Random',
+
+      // PLAYER — saved in DynamoDB through the API
+      player: null,          // { playerID, playerName, wins, losses } once logged in
+      isLoggedIn: false,     // true → hide the login form, show the player's stats
+      isNewPlayer: false,    // true when this login created the player
+      loginLoading: false,
+      loginError: null,
+      saveStatus: null,      // 'saving' | 'saved' | 'error'
     };
   }
 
@@ -38,8 +49,21 @@ class App extends Component {
     window.removeEventListener('keydown', this.handleKeyDown);
   }
 
+  // After a game ends, the player's stats were already updated locally in
+  // scoreUpdate(). Here we notice that change and save it with a PUT request.
+  componentDidUpdate(prevProps, prevState) {
+    const before = prevState.player;
+    const after = this.state.player;
+    const samePlayer = before && after && before.playerID === after.playerID;
+    if (samePlayer && (before.wins !== after.wins || before.losses !== after.losses)) {
+      this.saveStats(after);
+    }
+  }
+
   handleKeyDown = (event) => {
     if (event.ctrlKey || event.metaKey || event.altKey) return;
+    // Typing your name in the login box shouldn't guess letters
+    if (['INPUT', 'TEXTAREA', 'SELECT'].includes(event.target.tagName)) return;
     const key = event.key.toUpperCase();
     if (/^[A-Z]$/.test(key)) this.guessLetter(key);
     if (event.key === 'Enter' && this.getStatus() !== 'playing') this.newGame();
@@ -74,7 +98,7 @@ class App extends Component {
     });
   };
 
-  // Hint: reveals one hidden letter but costs a life (adds a wrong "miss").
+  // Hint: reveals one hidden letter but costs a life (counted through hintUsed).
   giveHint = () => {
     this.setState((prev) => {
       if (prev.hintUsed || this.getStatus(prev) !== 'playing') return null;
@@ -87,13 +111,60 @@ class App extends Component {
   };
 
   // Update wins/losses/streak once, at the moment a game ends.
+  // If a player is logged in, their stats are updated here too — locally in
+  // React first; componentDidUpdate then sends the PUT request.
   scoreUpdate(prev, next) {
     const before = this.getStatus(prev);
     const after = this.getStatus(next);
     if (before !== 'playing' || after === 'playing') return {};
-    if (after === 'won') return { wins: prev.wins + 1, streak: prev.streak + 1 };
-    return { losses: prev.losses + 1, streak: 0 };
+
+    const won = after === 'won';
+    const update = won
+      ? { wins: prev.wins + 1, streak: prev.streak + 1 }
+      : { losses: prev.losses + 1, streak: 0 };
+
+    if (prev.player) {
+      update.player = {
+        ...prev.player,
+        wins: prev.player.wins + (won ? 1 : 0),
+        losses: prev.player.losses + (won ? 0 : 1),
+      };
+    }
+    return update;
   }
+
+  // --- Player / API methods -------------------------------------------------
+
+  // LOGIN — GET the player by name. A 404 means they're new, so POST them.
+  handleLogin = async (playerName) => {
+    this.setState({ loginLoading: true, loginError: null });
+    try {
+      let player = await getPlayer(playerName);
+      let isNewPlayer = false;
+      if (!player) {
+        player = await createPlayer(playerName);
+        isNewPlayer = true;
+      }
+      this.setState({ player, isLoggedIn: true, isNewPlayer, loginLoading: false, saveStatus: null });
+    } catch (error) {
+      this.setState({ loginError: error.message, loginLoading: false });
+    }
+  };
+
+  handleLogout = () => {
+    this.setState({ player: null, isLoggedIn: false, isNewPlayer: false, saveStatus: null });
+  };
+
+  // PUT the player's current totals to the API.
+  saveStats = async (player) => {
+    this.setState({ saveStatus: 'saving' });
+    try {
+      await updatePlayerStats(player.playerID, { wins: player.wins, losses: player.losses });
+      this.setState({ saveStatus: 'saved' });
+    } catch {
+      this.setState({ saveStatus: 'error' });
+    }
+  };
 
   // NEW GAME — pick a fresh word and clear the guesses (score is kept).
   newGame = () => {
@@ -108,6 +179,9 @@ class App extends Component {
 
   render() {
     const { word, category, guessed, hintUsed, wins, losses, streak, categoryChoice } = this.state;
+    const { player, isLoggedIn, isNewPlayer, loginLoading, loginError, saveStatus } = this.state;
+    // Logged in → show the player's saved totals; otherwise this session's.
+    const stats = isLoggedIn ? { wins: player.wins, losses: player.losses } : { wins, losses };
     const status = this.getStatus();
     const livesLost = this.getLivesLost();
     const livesLeft = MAX_LIVES - livesLost;
@@ -116,11 +190,24 @@ class App extends Component {
     return (
       <div className="app">
         <Header
-          wins={wins}
-          losses={losses}
+          wins={stats.wins}
+          losses={stats.losses}
           streak={streak}
           onNewGame={this.newGame}
         />
+
+        {isLoggedIn ? (
+          <PlayerStats
+            playerName={player.playerName}
+            wins={player.wins}
+            losses={player.losses}
+            isNewPlayer={isNewPlayer}
+            saveStatus={saveStatus}
+            onLogout={this.handleLogout}
+          />
+        ) : (
+          <LoginForm onLogin={this.handleLogin} loading={loginLoading} error={loginError} />
+        )}
 
         <main className="board">
           <HangmanDrawing livesLost={livesLost} livesLeft={livesLeft} maxLives={MAX_LIVES} />
@@ -164,8 +251,8 @@ class App extends Component {
             status={status}
             word={word}
             livesLeft={livesLeft}
-            wins={wins}
-            losses={losses}
+            wins={stats.wins}
+            losses={stats.losses}
             streak={streak}
             onNewGame={this.newGame}
           />

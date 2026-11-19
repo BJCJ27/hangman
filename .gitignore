@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# DynamoDB Local data (created by docker compose)
+docker/

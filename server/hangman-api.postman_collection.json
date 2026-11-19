@@ -1,0 +1,253 @@
+{
+  "info": {
+    "name": "Hangman API",
+    "description": "Requests for the Hangman player API. Run them top to bottom: the POST saves playerID so the PUT can use it.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:4000"
+    },
+    {
+      "key": "playerName",
+      "value": "Brock"
+    },
+    {
+      "key": "playerID",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Health check",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/health",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "health"
+          ]
+        }
+      }
+    },
+    {
+      "name": "1. GET player by name (404 if new)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/players?playerName={{playerName}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "players"
+          ],
+          "query": [
+            {
+              "key": "playerName",
+              "value": "{{playerName}}"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if (pm.response.code === 200) pm.collectionVariables.set('playerID', pm.response.json().playerID);",
+              "pm.test('200 or 404', () => pm.expect([200, 404]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. POST create player",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/players",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "players"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"playerName\": \"{{playerName}}\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const body = pm.response.json();",
+              "pm.collectionVariables.set('playerID', body.playerID || (body.player && body.player.playerID));",
+              "pm.test('201 created (or 409 if they already exist)', () => pm.expect([201, 409]).to.include(pm.response.code));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. GET player again (200)",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": {
+          "raw": "{{baseUrl}}/players?playerName={{playerName}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "players"
+          ],
+          "query": [
+            {
+              "key": "playerName",
+              "value": "{{playerName}}"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('found', () => pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. PUT update stats",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/players/{{playerID}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "players",
+            "{{playerID}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"wins\": 3,\n  \"losses\": 1\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('updated', () => { pm.response.to.have.status(200); pm.expect(pm.response.json().wins).to.eql(3); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "PUT unknown player (404)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/players/not-a-real-id",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "players",
+            "not-a-real-id"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"wins\": 1,\n  \"losses\": 0\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "PUT bad stats (400)",
+      "request": {
+        "method": "PUT",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/players/{{playerID}}",
+          "host": [
+            "{{baseUrl}}"
+          ],
+          "path": [
+            "players",
+            "{{playerID}}"
+          ]
+        },
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"wins\": -1,\n  \"losses\": \"two\"\n}",
+          "options": {
+            "raw": {
+              "language": "json"
+            }
+          }
+        }
+      }
+    }
+  ]
+}

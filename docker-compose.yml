@@ -1,12 +1,49 @@
 services:
+  # DynamoDB Local — Amazon's official image, saves data to ./docker/dynamodb
+  dynamodb:
+    image: amazon/dynamodb-local:latest
+    container_name: hangman-dynamodb
+    command: "-jar DynamoDBLocal.jar -sharedDb -dbPath ./data"
+    working_dir: /home/dynamodblocal
+    user: root
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./docker/dynamodb:/home/dynamodblocal/data
+
+  # Express API (server/) — talks to DynamoDB, creates the Players table on start
+  api:
+    build: ./server
+    container_name: hangman-api
+    ports:
+      - "4000:4000"
+    environment:
+      - PORT=4000
+      - TABLE_NAME=Players
+      - DYNAMODB_ENDPOINT=http://dynamodb:8000
+      - AWS_REGION=us-east-1
+      # DynamoDB Local accepts any keys, but the AWS SDK requires some
+      - AWS_ACCESS_KEY_ID=local
+      - AWS_SECRET_ACCESS_KEY=local
+    volumes:
+      - ./server:/app
+      - /app/node_modules
+    depends_on:
+      - dynamodb
+
+  # React game (Vite) — the browser calls the API at localhost:4000
   app:
     build: .
+    container_name: hangman-app
     ports:
       - "3000:3000"
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost:4000
+      # Makes file-change reloads work when the project lives on a Windows/Mac drive
+      - CHOKIDAR_USEPOLLING=true
     volumes:
       - .:/app
       - /app/node_modules
-    environment:
-      - NODE_ENV=development
-      # Makes file-change reloads work when the project lives on a Windows/Mac drive
-      - CHOKIDAR_USEPOLLING=true
+    depends_on:
+      - api
